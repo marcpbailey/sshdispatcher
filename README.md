@@ -1,12 +1,14 @@
 # sshdispatcher
 
-A transparent `ssh` wrapper that routes connections to legacy DSA-only network gear through PuTTY's `plink`, while leaving all other hosts to the real `ssh`.
+A transparent `ssh` wrapper that routes connections to legacy DSA-only hosts through PuTTY's `plink`, while leaving all other hosts to the real `ssh`.
 
 ## Problem
 
-Some older managed network switches (e.g. TP-Link JetStream TL-SG2428P) only support `ssh-dss` (DSA 1024-bit) host keys. DSA was deprecated in OpenSSH 7.0 (2015), disabled by default in OpenSSH 9.7, and **completely removed** from OpenSSH 9.8/10.0 (2024–2025). Modern macOS clients can no longer connect to these devices regardless of what you put in `~/.ssh/config` — the algorithm name is unknown to the parser.
+`ssh-dss` (DSA 1024-bit) host keys were deprecated in OpenSSH 7.0 (2015), disabled by default in OpenSSH 9.7, and **completely removed** from OpenSSH 9.8/10.0 (2024–2025). Any host that has not migrated to a modern host key type (RSA 3072+, ECDSA, or Ed25519) is unreachable from current OpenSSH clients — the algorithm name is unknown to the parser, so even `HostKeyAlgorithms +ssh-dss` in `~/.ssh/config` causes the file to fail to load.
 
-PuTTY's `plink` still supports DSA and is available via Homebrew. `sshdispatcher` makes it invisible.
+This affects any device where the SSH implementation is fixed and cannot be upgraded: managed network switches, embedded appliances, serial console servers, legacy VMs — anything where the firmware is end-of-life or the vendor simply hasn't shipped a fix. TP-Link JetStream switches are a good example: common in home and small-office networks, only offering `ssh-dss`, with no firmware update in sight.
+
+PuTTY's `plink` still supports DSA and is available via Homebrew. `sshdispatcher` makes the handoff invisible.
 
 ## Quickstart
 
@@ -23,13 +25,13 @@ cd ~/Projects/sshdispatcher
 echo 'alias ssh=sshdispatcher' >> ~/.zshrc
 source ~/.zshrc
 
-# 4. Convert your switch key to PuTTY format (one-time per key)
-puttygen ~/.ssh/switch_key -O private -o ~/.ssh/switch_key.ppk
+# 4. Convert any keys to PuTTY format (one-time per key)
+puttygen ~/.ssh/mykey -O private -o ~/.ssh/mykey.ppk
 ```
 
 ## Configuration
 
-Mark a host stanza as legacy by including the commented line `# HostKeyAlgorithms +ssh-dss`. The comment form is preferred over the live form because OpenSSH 10+ does not recognise `ssh-dss` as a valid token, so a live directive causes the entire `~/.ssh/config` to fail to load.
+Mark a host stanza as legacy by adding the commented line `# HostKeyAlgorithms +ssh-dss`. The comment form is required — a live `HostKeyAlgorithms +ssh-dss` directive causes OpenSSH 10+ to reject the entire `~/.ssh/config` because `ssh-dss` is no longer a recognised algorithm token.
 
 ```
 Host switch switch.local 172.17.17.12 switch.fi
@@ -56,22 +58,24 @@ All aliases on the `Host` line are detected. Both stanzas above yield eight lega
 After adding the alias, `ssh` works as normal:
 
 ```bash
-ssh switch            # → plink (DSA host)
-ssh poeswitch.local   # → plink (DSA host)
+ssh switch            # → plink (legacy DSA host)
+ssh poeswitch.local   # → plink (legacy DSA host)
 ssh myserver          # → real ssh (unaffected)
 ssh -p 2222 switch    # → plink with -P 2222
 ssh admin@switch      # → plink as admin@switch
 ```
+
+On first connection to a legacy host, `plink` will prompt you to verify and accept the host key. Accepted keys are cached in `~/.putty/sshhostkeys`. Subsequent connections are silent.
 
 ## Key conversion
 
 PuTTY uses `.ppk` format instead of OpenSSH format. Convert once per key:
 
 ```bash
-puttygen ~/.ssh/switch_key -O private -o ~/.ssh/switch_key.ppk
+puttygen ~/.ssh/mykey -O private -o ~/.ssh/mykey.ppk
 ```
 
-The original key is unchanged. Both files represent the same keypair; the public key on the switch is the same either way. `sshdispatcher` detects the `.ppk` sibling automatically — if it exists, `plink` uses it; if not, `plink` falls back to a password prompt.
+The original key is unchanged. Both files represent the same keypair. `sshdispatcher` detects the `.ppk` sibling automatically — if it exists, `plink` uses it; if not, `plink` falls back to a password prompt.
 
 ## Trade-offs
 
@@ -79,7 +83,7 @@ The original key is unchanged. Both files represent the same keypair; the public
 |--------|--------|
 | Scope | Only `ssh` sessions are dispatched. `scp`, `sftp`, and `rsync` are not handled. |
 | KexAlgorithms / Ciphers | `plink` negotiates its own key exchange and cipher suite. The values in `~/.ssh/config` are not forwarded to it. |
-| Host-key pinning | `-hostkey "*"` is passed to `plink`, accepting any host key on first connection. |
+| Host-key verification | `plink` handles this interactively and caches keys in `~/.putty/sshhostkeys`. There is no fingerprint pinning in the dispatcher. |
 | Other `ssh` flags | Non-legacy hosts get the full original argv. Legacy hosts get a reconstructed minimal command line (`-p`, `-l`, `-i` only). |
 | Scripts & tools | The alias only applies to interactive shells. `git`, VS Code Remote-SSH, and other tools invoke `/usr/bin/ssh` or Homebrew's `ssh` directly and are unaffected. |
 

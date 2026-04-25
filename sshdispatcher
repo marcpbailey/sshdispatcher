@@ -96,7 +96,7 @@ if [[ -n "$host" ]] && is_legacy "$host"; then
     fi
   done < <("$REAL_SSH" -G "$host" 2>/dev/null)
 
-  args=(-ssh -hostkey "*")
+  args=(-ssh)
   [[ -n "$port" ]] && args+=(-P "$port")
   [[ -n "$identity" ]] && args+=(-i "$identity")
   args+=("${user:-admin}@$host")

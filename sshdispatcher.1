@@ -15,11 +15,24 @@
 .Nm
 is a thin wrapper around
 .Xr ssh 1
-designed for managed network equipment (such as TP-Link JetStream switches)
-that only supports
+that transparently routes connections to legacy
 .Cm ssh-dss
-(DSA 1024-bit) host keys.
-DSA was removed from OpenSSH 9.8 and cannot be re-enabled.
+(DSA 1024-bit) hosts through PuTTY's
+.Xr plink 1 ,
+while leaving all other connections to pass through to the real
+.Xr ssh 1
+unchanged.
+.Pp
+DSA host keys were deprecated in OpenSSH 7.0 (2015), disabled by default in
+OpenSSH 9.7, and completely removed from OpenSSH 9.8/10.0 (2024-2025).
+Any host that has not migrated to a modern host key type (RSA 3072+,
+ECDSA, or Ed25519) is unreachable from current OpenSSH clients.
+Firmware-locked devices that cannot be updated fall into this category:
+managed network switches, embedded appliances, serial console servers, and
+similar equipment that ships a fixed SSH implementation.
+.Xr plink 1
+(the PuTTY command-line client) retains DSA support and serves as the
+transport for these hosts.
 .Pp
 .Nm
 inspects
@@ -28,8 +41,7 @@ at startup and builds a list of
 .Dq legacy
 hosts.
 For those hosts it delegates to
-.Xr plink 1
-(the PuTTY command-line client, which retains DSA support).
+.Xr plink 1 .
 All other hosts are passed through unchanged to the real
 .Xr ssh 1 .
 .Sh DETECTION
@@ -79,7 +91,7 @@ PuTTY uses its own
 key format instead of the OpenSSH format.
 Conversion is one-time and deliberate:
 .Pp
-.Dl puttygen ~/.ssh/switch_key -O private -o ~/.ssh/switch_key.ppk
+.Dl puttygen ~/.ssh/mykey -O private -o ~/.ssh/mykey.ppk
 .Pp
 When dispatching to
 .Xr plink 1 ,
@@ -119,7 +131,7 @@ sibling rule naturally excludes them unless the user has deliberately converted 
 .Sh EXAMPLES
 Sample
 .Pa ~/.ssh/config
-stanza:
+stanza for a firmware-locked network switch that cannot be upgraded:
 .Bd -literal -offset indent
 Host switch switch.local 172.17.17.12 switch.fi
     HostName 172.17.17.12
@@ -134,7 +146,7 @@ All four aliases
 .Pq Cm switch , Cm switch.local , Cm 172.17.17.12 , Cm switch.fi
 are detected as legacy.
 .Pp
-Connect to the switch (plink is used transparently):
+Connect to a legacy host (plink is used transparently):
 .Pp
 .Dl ssh switch
 .Pp
@@ -187,12 +199,11 @@ and
 .Xr rsync 1
 over legacy hosts are not handled.
 .It
-Host-key fingerprint pinning is not implemented.
-The
-.Fl hostkey No \&*
-flag passed to
-.Xr plink 1
-accepts any host key on first connection.
+Host-key verification for legacy hosts is handled interactively by
+.Xr plink 1 ,
+which caches accepted keys in
+.Pa ~/.putty/sshhostkeys .
+There is no fingerprint pinning in the dispatcher itself.
 .It
 .Xr plink 1
 does not read
