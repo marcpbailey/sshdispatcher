@@ -205,6 +205,18 @@ which caches accepted keys in
 .Pa ~/.putty/sshhostkeys .
 There is no fingerprint pinning in the dispatcher itself.
 .It
+On first invocation,
+.Nm
+writes a PuTTY session profile to
+.Pa ~/.putty/sessions/sshdispatcher-legacy
+that moves
+.Cm dh-group1-sha1
+above the algorithm warn threshold.
+Without this, plink prompts "Continue with connection?" on every connection
+to a host whose only supported key-exchange algorithm is
+.Cm diffie-hellman-group1-sha1 .
+Delete this file to reset the preference list to PuTTY defaults.
+.It
 .Xr plink 1
 does not read
 .Ic KexAlgorithms
