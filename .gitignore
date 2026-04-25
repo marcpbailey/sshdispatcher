@@ -3,3 +3,4 @@
 *.swo
 *~
 tests/fixtures/*.ppk
+.claude/
