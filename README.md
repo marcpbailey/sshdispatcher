@@ -93,6 +93,14 @@ The original key is unchanged. Both files represent the same keypair. `sshdispat
 man sshdispatcher
 ```
 
+## PuTTY session profile
+
+The file [`sshdispatcher.putty`](sshdispatcher.putty) is a PuTTY session profile that `install.sh` symlinks to `~/.putty/sessions/sshdispatcher`. It does two things:
+
+- Moves `dh-group1-sha1` above PuTTY's warn threshold so plink never prompts "Continue with connection?" when connecting to a host that only supports that key-exchange algorithm.
+
+`install.sh` creates the symlink automatically. If you skip the installer, the dispatcher writes the file itself on first use.
+
 ## Running the tests
 
 ```bash

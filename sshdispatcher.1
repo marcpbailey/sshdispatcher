@@ -168,6 +168,16 @@ read from this file.
 Default install location (symlink to the repository copy).
 .It Pa /usr/local/share/man/man1/sshdispatcher.1
 Default man page location (symlink to the repository copy).
+.It Pa sshdispatcher.putty
+PuTTY session profile shipped with the repository.
+.Nm install.sh
+symlinks this file to
+.Pa ~/.putty/sessions/sshdispatcher ,
+where plink can load it with
+.Fl load No sshdispatcher .
+If the symlink is absent,
+.Nm
+writes the file automatically on first use.
 .El
 .Sh ENVIRONMENT
 .Bl -tag -width Ds
@@ -205,21 +215,27 @@ which caches accepted keys in
 .Pa ~/.putty/sshhostkeys .
 There is no fingerprint pinning in the dispatcher itself.
 .It
-On first invocation,
 .Nm
-writes a PuTTY session profile to
+passes
+.Fl load No sshdispatcher
+to plink, which loads
 .Pa ~/.putty/sessions/sshdispatcher
-that moves
+(symlinked from
+.Pa sshdispatcher.putty
+in the repository by
+.Nm install.sh ) .
+This session profile moves
 .Cm dh-group1-sha1
-above the algorithm warn threshold.
-Without this, plink prompts "Continue with connection?" on every connection
-to a host whose only supported key-exchange algorithm is
+above PuTTY's warn threshold, suppressing the "Continue with connection?" prompt on
+every connection to a host whose only supported key-exchange is
 .Cm diffie-hellman-group1-sha1 .
-Delete this file to reset the preference list to PuTTY defaults.
+If the session file is absent,
+.Nm
+writes it automatically on first use.
 .Nm
 also passes
 .Fl no-antispoof
-to suppress plink's post-authentication "Access granted. Press Return to begin session." prompt.
+to suppress plink's post-authentication "Access granted. Press Return to begin session." pause.
 .It
 .Xr plink 1
 does not read
