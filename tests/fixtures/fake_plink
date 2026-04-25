@@ -1,0 +1,4 @@
+#!/bin/bash
+# Fake plink that records its invocation.
+echo "fake_plink $*" >> "${FAKE_PLINK_LOG:-/dev/null}"
+exit 0

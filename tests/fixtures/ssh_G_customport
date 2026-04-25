@@ -1,0 +1,3 @@
+user admin
+port 2222
+identityfile ~/.ssh/id_rsa

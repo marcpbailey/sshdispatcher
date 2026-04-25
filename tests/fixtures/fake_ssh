@@ -1,0 +1,22 @@
+#!/bin/bash
+# Fake ssh for testing sshdispatcher.
+# When called as `ssh -G <host>`, prints canned output from
+# tests/fixtures/ssh_G_<host> if it exists, else prints defaults.
+# Otherwise records the invocation for pass-through assertions.
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+
+if [[ "${1:-}" == "-G" ]]; then
+  host="${2:-}"
+  fixture="$SCRIPT_DIR/ssh_G_${host}"
+  if [[ -f "$fixture" ]]; then
+    cat "$fixture"
+  else
+    echo "user admin"
+    echo "port 22"
+  fi
+  exit 0
+fi
+
+echo "fake_ssh $*" >> "${FAKE_SSH_LOG:-/dev/null}"
+exit 0

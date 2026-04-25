@@ -1,0 +1,24 @@
+Host switch switch.local 172.17.17.12 switch.fi
+    HostName 172.17.17.12
+    User admin
+    IdentityFile ~/.ssh/switch_key
+    # HostKeyAlgorithms +ssh-dss
+    KexAlgorithms +diffie-hellman-group1-sha1
+    Ciphers aes256-cbc
+
+Host poeswitch poeswitch.local 172.17.17.2 poeswitch.fi
+    HostName 172.17.17.2
+    User admin
+    IdentityFile ~/.ssh/poeswitch_key
+    # HostKeyAlgorithms +ssh-dss
+    KexAlgorithms +diffie-hellman-group1-sha1
+    Ciphers aes256-cbc
+
+Host liveswitch
+    HostName 10.0.0.1
+    User admin
+    HostKeyAlgorithms +ssh-dss
+
+Host normalhost
+    HostName 10.0.0.50
+    User bob

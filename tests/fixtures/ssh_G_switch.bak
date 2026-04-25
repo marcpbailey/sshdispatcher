@@ -1,0 +1,3 @@
+user admin
+port 22
+identityfile ~/.ssh/switch_key
