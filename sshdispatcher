@@ -2,7 +2,7 @@
 # sshdispatcher - dispatch legacy DSA hosts to plink, others to real ssh.
 # A host is "legacy" if its ~/.ssh/config stanza contains
 # `HostKeyAlgorithms +ssh-dss` (live OR commented).
-# Author: Marc (marc@fountainhead.industries)
+# Author: Marc Bailey
 
 set -euo pipefail
 
