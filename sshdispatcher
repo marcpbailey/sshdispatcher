@@ -89,7 +89,7 @@ if [[ -n "$host" ]] && is_legacy "$host"; then
   # prompting. PuTTY places dh-group1-sha1 after the WARN marker by default;
   # this session overrides that preference list so legacy switches connect silently.
   PLINK_SESSION_DIR="${HOME}/.putty/sessions"
-  PLINK_SESSION="${PLINK_SESSION_DIR}/sshdispatcher-legacy"
+  PLINK_SESSION="${PLINK_SESSION_DIR}/sshdispatcher"
   if [[ ! -f "$PLINK_SESSION" ]]; then
     mkdir -p "$PLINK_SESSION_DIR"
     printf 'KEX=ntru-curve25519,ecdh,dh-gex-sha256,dh-gex-sha1,dh-group18-sha512,dh-group17-sha512,dh-group16-sha512,dh-group15-sha512,dh-group14-sha256,dh-group14-sha1,dh-group1-sha1,WARN,rsa\n' \
@@ -107,7 +107,7 @@ if [[ -n "$host" ]] && is_legacy "$host"; then
     fi
   done < <("$REAL_SSH" -G "$host" 2>/dev/null)
 
-  args=(-load sshdispatcher-legacy -ssh)
+  args=(-load sshdispatcher -ssh -no-antispoof)
   [[ -n "$port" ]] && args+=(-P "$port")
   [[ -n "$identity" ]] && args+=(-i "$identity")
   args+=("${user:-admin}@$host")

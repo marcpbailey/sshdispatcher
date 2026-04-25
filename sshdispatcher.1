@@ -208,7 +208,7 @@ There is no fingerprint pinning in the dispatcher itself.
 On first invocation,
 .Nm
 writes a PuTTY session profile to
-.Pa ~/.putty/sessions/sshdispatcher-legacy
+.Pa ~/.putty/sessions/sshdispatcher
 that moves
 .Cm dh-group1-sha1
 above the algorithm warn threshold.
@@ -216,6 +216,10 @@ Without this, plink prompts "Continue with connection?" on every connection
 to a host whose only supported key-exchange algorithm is
 .Cm diffie-hellman-group1-sha1 .
 Delete this file to reset the preference list to PuTTY defaults.
+.Nm
+also passes
+.Fl no-antispoof
+to suppress plink's post-authentication "Access granted. Press Return to begin session." prompt.
 .It
 .Xr plink 1
 does not read
