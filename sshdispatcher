@@ -1,0 +1,106 @@
+#!/bin/bash
+# sshdispatcher - dispatch legacy DSA hosts to plink, others to real ssh.
+# A host is "legacy" if its ~/.ssh/config stanza contains
+# `HostKeyAlgorithms +ssh-dss` (live OR commented).
+# Author: Marc (marc@fountainhead.industries)
+
+set -euo pipefail
+
+REAL_SSH="${SSHDISPATCHER_SSH:-$(PATH="/opt/homebrew/bin:/usr/bin" command -v ssh)}"
+PLINK="${SSHDISPATCHER_PLINK-$(command -v plink 2>/dev/null || true)}"
+CONFIG="${HOME}/.ssh/config"
+
+# Build a newline-delimited list of legacy hostnames from ~/.ssh/config.
+# A stanza is legacy if it contains `HostKeyAlgorithms +ssh-dss` (live or commented).
+LEGACY_HOSTS=""
+current_hosts=""
+has_dss=0
+
+flush() {
+  if (( has_dss )) && [[ -n "$current_hosts" ]]; then
+    for h in $current_hosts; do
+      LEGACY_HOSTS="${LEGACY_HOSTS}${h}"$'\n'
+    done
+  fi
+  current_hosts=""
+  has_dss=0
+}
+
+if [[ -r "$CONFIG" ]]; then
+  while IFS= read -r line; do
+    # Strip leading whitespace, then strip leading comment marker + optional space.
+    trimmed="${line#"${line%%[![:space:]]*}"}"
+    stripped="${trimmed#\#}"
+    stripped="${stripped# }"
+    if [[ "$stripped" =~ ^[Hh]ost[[:space:]]+(.+)$ ]]; then
+      flush
+      current_hosts="${BASH_REMATCH[1]}"
+    elif [[ "$stripped" =~ [Hh]ost[Kk]ey[Aa]lgorithms[[:space:]]*\+[[:space:]]*ssh-dss ]] \
+      || [[ "$stripped" =~ [Hh]ost[Kk]ey[Aa]lgorithms[[:space:]]+[^[:space:]]*ssh-dss ]]; then
+      has_dss=1
+    fi
+  done < "$CONFIG"
+  flush
+fi
+
+is_legacy() {
+  printf '%s' "$LEGACY_HOSTS" | grep -qxF "$1"
+}
+
+# Parse argv to extract host, user, port.
+# Skip flag values for flags that take an argument.
+host=""
+user=""
+port=""
+prev=""
+flag_takes_value='^-[bcDEeFIiJLlmOopQRSWw]$'
+
+for arg in "$@"; do
+  if [[ -n "$prev" ]]; then
+    case "$prev" in
+      -p) port="$arg" ;;
+      -l) user="$arg" ;;
+    esac
+    prev=""
+    continue
+  fi
+  if [[ "$arg" =~ $flag_takes_value ]]; then
+    prev="$arg"
+    continue
+  fi
+  [[ "$arg" =~ ^- ]] && continue
+  if [[ -z "$host" ]]; then
+    if [[ "$arg" =~ ^([^@]+)@(.+)$ ]]; then
+      user="${BASH_REMATCH[1]}"
+      host="${BASH_REMATCH[2]}"
+    else
+      host="$arg"
+    fi
+  fi
+done
+
+if [[ -n "$host" ]] && is_legacy "$host"; then
+  if [[ -z "$PLINK" ]]; then
+    echo "sshdispatcher: plink not found — install with: brew install putty" >&2
+    exit 1
+  fi
+
+  identity=""
+  # Resolve user, port, and identityfile from ssh -G when not set on CLI.
+  while IFS=' ' read -r k v; do
+    [[ "$k" == "user" && -z "$user" ]] && user="$v"
+    [[ "$k" == "port" && -z "$port" ]] && port="$v"
+    if [[ "$k" == "identityfile" && -z "$identity" ]]; then
+      expanded="${v/#\~/$HOME}"
+      [[ -f "${expanded}.ppk" ]] && identity="${expanded}.ppk"
+    fi
+  done < <("$REAL_SSH" -G "$host" 2>/dev/null)
+
+  args=(-ssh -hostkey "*")
+  [[ -n "$port" ]] && args+=(-P "$port")
+  [[ -n "$identity" ]] && args+=(-i "$identity")
+  args+=("${user:-admin}@$host")
+  exec "$PLINK" "${args[@]}"
+fi
+
+exec "$REAL_SSH" "$@"
