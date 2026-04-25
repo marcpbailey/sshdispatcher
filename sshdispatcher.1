@@ -1,0 +1,207 @@
+.Dd April 25, 2026
+.Dt SSHDISPATCHER 1
+.Os
+.Sh NAME
+.Nm sshdispatcher
+.Nd transparent SSH wrapper that routes legacy DSA-only hosts to plink
+.Sh SYNOPSIS
+.Nm
+.Op Fl p Ar port
+.Op Fl l Ar user
+.Op Ar options
+.Ar [user@]host
+.Op Ar command
+.Sh DESCRIPTION
+.Nm
+is a thin wrapper around
+.Xr ssh 1
+designed for managed network equipment (such as TP-Link JetStream switches)
+that only supports
+.Cm ssh-dss
+(DSA 1024-bit) host keys.
+DSA was removed from OpenSSH 9.8 and cannot be re-enabled.
+.Pp
+.Nm
+inspects
+.Pa ~/.ssh/config
+at startup and builds a list of
+.Dq legacy
+hosts.
+For those hosts it delegates to
+.Xr plink 1
+(the PuTTY command-line client, which retains DSA support).
+All other hosts are passed through unchanged to the real
+.Xr ssh 1 .
+.Sh DETECTION
+A host stanza in
+.Pa ~/.ssh/config
+is classified as legacy when it contains the line:
+.Pp
+.Dl HostKeyAlgorithms +ssh-dss
+.Pp
+either live or as a comment:
+.Pp
+.Dl # HostKeyAlgorithms +ssh-dss
+.Pp
+The commented form is preferred because it keeps
+.Ic ssh -G
+working and avoids parse errors in OpenSSH 10+ (which no longer recognises
+.Cm ssh-dss
+as a valid algorithm token).
+All host aliases listed on the
+.Ic Host
+line of the matching stanza are registered as legacy.
+.Sh OPTIONS
+.Nm
+recognises the same flags as
+.Xr ssh 1 .
+The flags listed below receive special treatment:
+.Bl -tag -width Ds
+.It Fl p Ar port
+Passed to
+.Xr plink 1
+as
+.Fl P Ar port .
+.It Fl l Ar user
+Sets the login user for
+.Xr plink 1 .
+.El
+.Pp
+For non-legacy hosts every argument is forwarded verbatim to
+.Xr ssh 1 .
+For legacy hosts the dispatcher reconstructs a minimal
+.Xr plink 1
+command line; flags not listed above are not forwarded (plink uses its own
+negotiation for ciphers and key exchange).
+.Sh IDENTITY FILES
+PuTTY uses its own
+.Pa .ppk
+key format instead of the OpenSSH format.
+Conversion is one-time and deliberate:
+.Pp
+.Dl puttygen ~/.ssh/switch_key -O private -o ~/.ssh/switch_key.ppk
+.Pp
+When dispatching to
+.Xr plink 1 ,
+.Nm
+resolves the
+.Ic IdentityFile
+entries from
+.Pa ~/.ssh/config
+via
+.Ic ssh -G .
+For each candidate path it checks for a
+.Pa .ppk
+sibling at the same location.
+If found, that file is passed to
+.Xr plink 1
+as
+.Fl i Ar path .ppk .
+If multiple candidates have
+.Pa .ppk
+siblings, the first one wins (matching OpenSSH first-match-wins behaviour).
+If no
+.Pa .ppk
+sibling exists,
+.Fl i
+is omitted and
+.Xr plink 1
+falls back to a password prompt.
+.Pp
+OpenSSH default identity files
+.Pq Pa id_rsa , Pa id_ed25519 , etc.
+are returned by
+.Ic ssh -G
+even when not configured explicitly.
+The
+.Pa .ppk
+sibling rule naturally excludes them unless the user has deliberately converted them.
+.Sh EXAMPLES
+Sample
+.Pa ~/.ssh/config
+stanza:
+.Bd -literal -offset indent
+Host switch switch.local 172.17.17.12 switch.fi
+    HostName 172.17.17.12
+    User admin
+    IdentityFile ~/.ssh/switch_key
+    # HostKeyAlgorithms +ssh-dss
+    KexAlgorithms +diffie-hellman-group1-sha1
+    Ciphers aes256-cbc
+.Ed
+.Pp
+All four aliases
+.Pq Cm switch , Cm switch.local , Cm 172.17.17.12 , Cm switch.fi
+are detected as legacy.
+.Pp
+Connect to the switch (plink is used transparently):
+.Pp
+.Dl ssh switch
+.Pp
+Connect to a normal host (real ssh is used):
+.Pp
+.Dl ssh user@myserver.example.com
+.Pp
+Connect on a non-standard port:
+.Pp
+.Dl ssh -p 2222 switch
+.Sh FILES
+.Bl -tag -width Pa
+.It Pa ~/.ssh/config
+Standard OpenSSH configuration file.
+Both legacy detection and config resolution
+.Pq user, port, IdentityFile
+read from this file.
+.It Pa /usr/local/bin/sshdispatcher
+Default install location (symlink to the repository copy).
+.It Pa /usr/local/share/man/man1/sshdispatcher.1
+Default man page location (symlink to the repository copy).
+.El
+.Sh ENVIRONMENT
+.Bl -tag -width Ds
+.It Ev SSHDISPATCHER_SSH
+Override the path to the real
+.Xr ssh 1
+binary.
+Useful for testing.
+.It Ev SSHDISPATCHER_PLINK
+Override the path to
+.Xr plink 1 .
+Set to an empty string to simulate a missing plink.
+Useful for testing.
+.El
+.Sh SEE ALSO
+.Xr ssh 1 ,
+.Xr ssh_config 5 ,
+.Xr plink 1 ,
+.Xr puttygen 1
+.Sh LIMITATIONS
+.Bl -bullet
+.It
+Only
+.Xr ssh 1
+dispatch is implemented.
+.Xr scp 1 ,
+.Xr sftp 1 ,
+and
+.Xr rsync 1
+over legacy hosts are not handled.
+.It
+Host-key fingerprint pinning is not implemented.
+The
+.Fl hostkey No \&*
+flag passed to
+.Xr plink 1
+accepts any host key on first connection.
+.It
+.Xr plink 1
+does not read
+.Ic KexAlgorithms
+or
+.Ic Ciphers
+from
+.Pa ~/.ssh/config .
+It negotiates its own key exchange and cipher suite, which may differ from
+what is configured for
+.Xr ssh 1 .
+.El
