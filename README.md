@@ -65,7 +65,18 @@ ssh -p 2222 switch    # → plink with -P 2222
 ssh admin@switch      # → plink as admin@switch
 ```
 
-On first connection to a legacy host, `plink` will prompt you to verify and accept the host key. Accepted keys are cached in `~/.putty/sshhostkeys`. Subsequent connections are silent.
+On the first connection to a new legacy host, `plink` will prompt you to verify and accept its host key. That key is cached in `~/.putty/sshhostkeys` and the prompt does not reappear. All other connections are silent.
+
+## PuTTY session profile (`sshdispatcher.putty`)
+
+Without additional configuration, `plink` produces two interactive prompts on **every** connection to a legacy host — not just the first:
+
+- **KEX warning:** `"The first key-exchange algorithm supported by the server is diffie-hellman-group1-sha1, which is below the configured warning threshold. Continue with connection? (y/n)"` — plink's default algorithm preference list places `dh-group1-sha1` below a warn marker, so it flags it every time regardless of whether you've connected before.
+- **Anti-spoofing pause:** `"Access granted. Press Return to begin session."` — a PuTTY security feature that pauses after authentication to prevent a rogue server from mimicking a shell prompt before auth completes.
+
+Both are suppressed by the dispatcher. The KEX warning is handled via [`sshdispatcher.putty`](sshdispatcher.putty), a PuTTY session profile that reconfigures the algorithm preference list to place `dh-group1-sha1` before the warn marker. The dispatcher loads it on every plink invocation with `plink -load sshdispatcher.putty`. The anti-spoofing pause is suppressed with plink's `-no-antispoof` flag.
+
+`install.sh` symlinks `sshdispatcher.putty` from the repository into `~/.putty/sessions/sshdispatcher.putty`, where plink can find it by name. If you skip the installer, the dispatcher writes the file itself on first use.
 
 ## Key conversion
 
@@ -82,8 +93,8 @@ The original key is unchanged. Both files represent the same keypair. `sshdispat
 | Aspect | Detail |
 |--------|--------|
 | Scope | Only `ssh` sessions are dispatched. `scp`, `sftp`, and `rsync` are not handled. |
-| KexAlgorithms / Ciphers | `plink` negotiates its own key exchange and cipher suite. The values in `~/.ssh/config` are not forwarded to it. |
-| Host-key verification | `plink` handles this interactively and caches keys in `~/.putty/sshhostkeys`. There is no fingerprint pinning in the dispatcher. |
+| KexAlgorithms / Ciphers | `plink` negotiates its own key exchange and cipher suite. The `KexAlgorithms` and `Ciphers` values in `~/.ssh/config` are not forwarded to it. |
+| Host-key verification | `plink` handles this interactively on first connection and caches keys in `~/.putty/sshhostkeys`. There is no fingerprint pinning in the dispatcher. |
 | Other `ssh` flags | Non-legacy hosts get the full original argv. Legacy hosts get a reconstructed minimal command line (`-p`, `-l`, `-i` only). |
 | Scripts & tools | The alias only applies to interactive shells. `git`, VS Code Remote-SSH, and other tools invoke `/usr/bin/ssh` or Homebrew's `ssh` directly and are unaffected. |
 
@@ -92,12 +103,6 @@ The original key is unchanged. Both files represent the same keypair. `sshdispat
 ```bash
 man sshdispatcher
 ```
-
-## PuTTY session profile
-
-The file [`sshdispatcher.putty`](sshdispatcher.putty) is a PuTTY session profile that `install.sh` symlinks to `~/.putty/sessions/sshdispatcher.putty`. It moves `dh-group1-sha1` above PuTTY's warn threshold so plink never prompts "Continue with connection?" on every connection to a host that only supports that key-exchange algorithm. The dispatcher also passes `-no-antispoof` to plink, suppressing the "Access granted. Press Return to begin session." pause after authentication.
-
-`install.sh` creates the symlink automatically. If you skip the installer, the dispatcher writes the session file itself on first use.
 
 ## Running the tests
 
