@@ -178,6 +178,11 @@ where plink loads it with
 If the symlink is absent,
 .Nm
 writes the file automatically on first use.
+Because it is a standard PuTTY session file, any PuTTY setting that
+has no
+.Xr plink 1
+CLI equivalent — keepalive intervals, terminal type, bell behaviour,
+and so on — can be added here to apply to all legacy connections.
 .El
 .Sh ENVIRONMENT
 .Bl -tag -width Ds

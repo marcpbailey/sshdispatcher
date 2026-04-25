@@ -78,6 +78,8 @@ Both are suppressed by the dispatcher. The KEX warning is handled via [`sshdispa
 
 `install.sh` symlinks `sshdispatcher.putty` from the repository into `~/.putty/sessions/sshdispatcher.putty`, where plink can find it by name. If you skip the installer, the dispatcher writes the file itself on first use.
 
+Because it is a standard PuTTY session file, any other PuTTY setting that has no `plink` CLI equivalent — keepalive intervals, terminal type, bell behaviour, etc. — can be added here to apply to all legacy connections.
+
 ## Key conversion
 
 PuTTY uses `.ppk` format instead of OpenSSH format. Convert once per key:
