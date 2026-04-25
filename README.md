@@ -95,11 +95,9 @@ man sshdispatcher
 
 ## PuTTY session profile
 
-The file [`sshdispatcher.putty`](sshdispatcher.putty) is a PuTTY session profile that `install.sh` symlinks to `~/.putty/sessions/sshdispatcher`. It does two things:
+The file [`sshdispatcher.putty`](sshdispatcher.putty) is a PuTTY session profile that `install.sh` symlinks to `~/.putty/sessions/sshdispatcher.putty`. It moves `dh-group1-sha1` above PuTTY's warn threshold so plink never prompts "Continue with connection?" on every connection to a host that only supports that key-exchange algorithm. The dispatcher also passes `-no-antispoof` to plink, suppressing the "Access granted. Press Return to begin session." pause after authentication.
 
-- Moves `dh-group1-sha1` above PuTTY's warn threshold so plink never prompts "Continue with connection?" when connecting to a host that only supports that key-exchange algorithm.
-
-`install.sh` creates the symlink automatically. If you skip the installer, the dispatcher writes the file itself on first use.
+`install.sh` creates the symlink automatically. If you skip the installer, the dispatcher writes the session file itself on first use.
 
 ## Running the tests
 

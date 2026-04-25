@@ -17,8 +17,8 @@ sudo ln -sf "$REPO_DIR/sshdispatcher" "$BIN_DIR/sshdispatcher"
 echo "==> Symlinking sshdispatcher.1 -> $MAN_DIR/sshdispatcher.1"
 sudo ln -sf "$REPO_DIR/sshdispatcher.1" "$MAN_DIR/sshdispatcher.1"
 
-echo "==> Symlinking sshdispatcher.putty -> $PUTTY_SESSION_DIR/sshdispatcher"
-ln -sf "$REPO_DIR/sshdispatcher.putty" "$PUTTY_SESSION_DIR/sshdispatcher"
+echo "==> Symlinking sshdispatcher.putty -> $PUTTY_SESSION_DIR/sshdispatcher.putty"
+ln -sf "$REPO_DIR/sshdispatcher.putty" "$PUTTY_SESSION_DIR/sshdispatcher.putty"
 
 if ! command -v plink &>/dev/null; then
   echo ""

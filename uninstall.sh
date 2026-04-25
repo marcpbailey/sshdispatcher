@@ -12,8 +12,8 @@ sudo rm -f "$BIN_DIR/sshdispatcher"
 echo "==> Removing $MAN_DIR/sshdispatcher.1"
 sudo rm -f "$MAN_DIR/sshdispatcher.1"
 
-echo "==> Removing $PUTTY_SESSION_DIR/sshdispatcher"
-rm -f "$PUTTY_SESSION_DIR/sshdispatcher"
+echo "==> Removing $PUTTY_SESSION_DIR/sshdispatcher.putty"
+rm -f "$PUTTY_SESSION_DIR/sshdispatcher.putty"
 
 echo ""
 echo "Uninstall complete."

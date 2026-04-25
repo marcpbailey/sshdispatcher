@@ -172,9 +172,9 @@ Default man page location (symlink to the repository copy).
 PuTTY session profile shipped with the repository.
 .Nm install.sh
 symlinks this file to
-.Pa ~/.putty/sessions/sshdispatcher ,
-where plink can load it with
-.Fl load No sshdispatcher .
+.Pa ~/.putty/sessions/sshdispatcher.putty ,
+where plink loads it with
+.Fl load No sshdispatcher.putty .
 If the symlink is absent,
 .Nm
 writes the file automatically on first use.
@@ -217,9 +217,9 @@ There is no fingerprint pinning in the dispatcher itself.
 .It
 .Nm
 passes
-.Fl load No sshdispatcher
+.Fl load No sshdispatcher.putty
 to plink, which loads
-.Pa ~/.putty/sessions/sshdispatcher
+.Pa ~/.putty/sessions/sshdispatcher.putty
 (symlinked from
 .Pa sshdispatcher.putty
 in the repository by
