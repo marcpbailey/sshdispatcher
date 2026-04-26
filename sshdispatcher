@@ -4,6 +4,10 @@
 # `HostKeyAlgorithms +ssh-dss` (live OR commented).
 # Author: Marc Bailey
 
+# Some debugging output
+# echo "sshdispatcher invoked: $*" >> /tmp/ssd.log
+# echo "sshdispatcher: ITERM_PROFILE=${ITERM_PROFILE:-<unset>}" >> /tmp/ssd.log
+
 set -euo pipefail
 
 REAL_SSH="${SSHDISPATCHER_SSH:-$(PATH="/opt/homebrew/bin:/usr/bin" command -v ssh)}"

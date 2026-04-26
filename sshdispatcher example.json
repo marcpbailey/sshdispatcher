@@ -1,0 +1,18 @@
+{
+  "Profiles": [
+    {
+      "Rewritable": true,
+      "Command": "$ITERM_PROFILE",
+      "SSH": {
+        "filesToCopy": [],
+        "sshIntegration": true,
+        "pathToSSH": "\/usr\/local\/bin\/sshdispatcher",
+        "environmentVariablesToCopy": []
+      },
+      "Custom Command": "SSH",
+      "Name": "poeswitch.local",
+      "Custom Shell": "\/bin\/zsh",
+      "Guid": "019744AC-81A9-4F41-9EA4-2492469716FE"
+    }
+  ]
+}
